@@ -84,6 +84,19 @@ export function isValidIp(ip: string): boolean {
 }
 
 /**
+ * Format a host for inclusion in a URL authority component.
+ *
+ * RFC 3986 requires IPv6 literals to be wrapped in square brackets so the
+ * port separator is unambiguous. Domains and IPv4 addresses are returned
+ * as-is. Already-bracketed input is passed through unchanged.
+ */
+export function formatHostForUrl(host: string): string {
+  if (!host) return host;
+  if (host.startsWith('[') && host.endsWith(']')) return host;
+  return isValidIpv6(host) ? `[${host}]` : host;
+}
+
+/**
  * Fetch public IP from a single service with timeout
  *
  * @param url - Service URL

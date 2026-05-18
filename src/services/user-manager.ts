@@ -14,6 +14,7 @@ import { PublicIpManager } from './public-ip-manager';
 import { UserMetadataManager } from './user-metadata-manager';
 import type { User, CreateUserParams, UserShareInfo } from '../types/user';
 import { isValidEmail } from '../utils/validator';
+import { formatHostForUrl } from '../utils/network';
 import { UserError, NetworkError } from '../utils/errors';
 import { UserErrors, NetworkErrors, ConfigErrors } from '../constants/error-codes';
 import { ConfigError } from '../utils/errors';
@@ -416,9 +417,9 @@ export class UserManager {
       params.set('sid', shortId);
       params.set('spx', '/');
 
-      vlessLink = `vless://${user.id}@${serverAddress}:${port}?${params.toString()}#${name}`;
+      vlessLink = `vless://${user.id}@${formatHostForUrl(serverAddress)}:${port}?${params.toString()}#${name}`;
     } else {
-      vlessLink = `vless://${user.id}@${serverAddress}:${port}?encryption=none&security=${security}&type=${network}&flow=${flow}#${name}`;
+      vlessLink = `vless://${user.id}@${formatHostForUrl(serverAddress)}:${port}?encryption=none&security=${security}&type=${network}&flow=${flow}#${name}`;
     }
 
     // Build CDN (WebSocket) link if ws inbound exists
@@ -441,7 +442,7 @@ export class UserManager {
       });
 
       // CDN link uses domain as server address (user should replace with their CDN domain)
-      cdnShareLink = `vless://${user.id}@${wsHost}:${wsPort}?${wsParams.toString()}#${encodeURIComponent(user.email + '-CDN')}`;
+      cdnShareLink = `vless://${user.id}@${formatHostForUrl(wsHost)}:${wsPort}?${wsParams.toString()}#${encodeURIComponent(user.email + '-CDN')}`;
     }
 
     return {
@@ -493,7 +494,7 @@ export class UserManager {
           });
 
           const name = encodeURIComponent((client.email || 'user') + '-CDN');
-          return `vless://${client.id}@${cdnDomain}:${cdnPort}?${params.toString()}#${name}`;
+          return `vless://${client.id}@${formatHostForUrl(cdnDomain)}:${cdnPort}?${params.toString()}#${name}`;
         }
       }
     }

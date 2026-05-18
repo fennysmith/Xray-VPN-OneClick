@@ -12,6 +12,7 @@ import {
   isPrivateIp,
   getNetworkInterfaces,
   detectNetwork,
+  formatHostForUrl,
 } from '../../../src/utils/network';
 
 // Mock child_process
@@ -64,6 +65,29 @@ describe('Network Utilities', () => {
         expect(isValidIp('2001:0db8:85a3::8a2e:370g:7334')).toBe(false);
         expect(isValidIp('2001:0db8:85a3')).toBe(false);
       });
+    });
+  });
+
+  describe('formatHostForUrl', () => {
+    it('returns IPv4 addresses unchanged', () => {
+      expect(formatHostForUrl('1.2.3.4')).toBe('1.2.3.4');
+    });
+
+    it('returns domains unchanged', () => {
+      expect(formatHostForUrl('example.com')).toBe('example.com');
+    });
+
+    it('wraps bare IPv6 addresses in brackets', () => {
+      expect(formatHostForUrl('2a02:c207:2329:2574::1')).toBe('[2a02:c207:2329:2574::1]');
+      expect(formatHostForUrl('::1')).toBe('[::1]');
+    });
+
+    it('does not double-bracket already-bracketed input', () => {
+      expect(formatHostForUrl('[2a02:c207:2329:2574::1]')).toBe('[2a02:c207:2329:2574::1]');
+    });
+
+    it('returns empty input as-is', () => {
+      expect(formatHostForUrl('')).toBe('');
     });
   });
 

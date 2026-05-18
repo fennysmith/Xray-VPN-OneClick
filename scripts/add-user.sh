@@ -141,8 +141,12 @@ echo "邮箱: $USER_EMAIL"
 echo "UUID: $NEW_UUID"
 echo ""
 
-# 获取服务器 IP 和其他配置信息
-SERVER_IP=$(curl -s ifconfig.me 2>/dev/null || echo "YOUR_SERVER_IP")
+# 获取服务器 IP 和其他配置信息（优先 IPv4，回退 IPv6）
+SERVER_IP=$(curl -4 -s --connect-timeout 5 ifconfig.me 2>/dev/null | tr -d '[:space:]')
+if [[ -z "$SERVER_IP" ]]; then
+    SERVER_IP=$(curl -6 -s --connect-timeout 5 ifconfig.me 2>/dev/null | tr -d '[:space:]')
+fi
+SERVER_IP=${SERVER_IP:-YOUR_SERVER_IP}
 
 # 从配置文件读取 Public Key
 PUBLIC_KEY=$(python3 << EOF

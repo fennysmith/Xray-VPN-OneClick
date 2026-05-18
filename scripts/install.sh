@@ -382,13 +382,54 @@ echo "Private Key: $PRIVATE_KEY"
 echo "Public Key: $PUBLIC_KEY"
 echo "Short ID: $SHORT_ID"
 
-# 获取服务器 IP
-SERVER_IP=$(curl -s --connect-timeout 5 ifconfig.me || curl -s --connect-timeout 5 ip.sb || curl -s --connect-timeout 5 ipinfo.io/ip)
+# 获取服务器 IP（优先 IPv4，回退 IPv6）
+SERVER_IP=""
+IP_FAMILY=""
+
+# 尝试 IPv4
+for endpoint in "https://api.ipify.org" "https://ifconfig.me/ip" "https://api.ip.sb/ip"; do
+    SERVER_IP=$(curl -4 -s --connect-timeout 5 --max-time 8 "$endpoint" 2>/dev/null | tr -d '[:space:]')
+    if [[ -n "$SERVER_IP" ]] && [[ "$SERVER_IP" =~ ^([0-9]{1,3}\.){3}[0-9]{1,3}$ ]]; then
+        IP_FAMILY="ipv4"
+        break
+    fi
+    SERVER_IP=""
+done
+
+# IPv4 失败时回退 IPv6
+if [[ -z "$SERVER_IP" ]]; then
+    for endpoint in "https://api6.ipify.org" "https://ifconfig.me/ip" "https://api.ip.sb/ip"; do
+        SERVER_IP=$(curl -6 -s --connect-timeout 5 --max-time 8 "$endpoint" 2>/dev/null | tr -d '[:space:]')
+        if [[ -n "$SERVER_IP" ]] && [[ "$SERVER_IP" == *:* ]]; then
+            IP_FAMILY="ipv6"
+            break
+        fi
+        SERVER_IP=""
+    done
+fi
+
 if [[ -z "$SERVER_IP" ]]; then
     echo "⚠️  无法自动获取公网 IP"
-    read -p "请手动输入服务器公网 IP: " SERVER_IP
+    read -p "请手动输入服务器公网 IP (IPv4 或 IPv6): " SERVER_IP
+    SERVER_IP=$(echo "$SERVER_IP" | tr -d '[:space:]')
+    if [[ "$SERVER_IP" == *:* ]]; then
+        IP_FAMILY="ipv6"
+    else
+        IP_FAMILY="ipv4"
+    fi
 fi
-echo "服务器 IP: $SERVER_IP"
+
+# 构造 URL 中使用的主机字段（IPv6 必须用方括号包裹）
+if [[ "$IP_FAMILY" == "ipv6" ]]; then
+    SERVER_HOST_URL="[${SERVER_IP}]"
+else
+    SERVER_HOST_URL="$SERVER_IP"
+fi
+
+echo "服务器 IP: $SERVER_IP ($IP_FAMILY)"
+if [[ "$IP_FAMILY" == "ipv6" ]]; then
+    echo "⚠️  仅检测到 IPv6 公网地址。客户端所在网络必须支持 IPv6 才能连接。"
+fi
 
 # 创建配置文件
 echo ""
@@ -572,7 +613,7 @@ if systemctl is-active --quiet xray; then
   echo "Flow: xtls-rprx-vision"
   echo ""
   echo "📱 分享链接："
-  SHARE_LINK="vless://${UUID}@${SERVER_IP}:443?encryption=none&flow=xtls-rprx-vision&security=reality&sni=www.microsoft.com&fp=chrome&pbk=${PUBLIC_KEY}&sid=${SHORT_ID}&type=tcp&headerType=none#Xray-Reality"
+  SHARE_LINK="vless://${UUID}@${SERVER_HOST_URL}:443?encryption=none&flow=xtls-rprx-vision&security=reality&sni=www.microsoft.com&fp=chrome&pbk=${PUBLIC_KEY}&sid=${SHORT_ID}&type=tcp&headerType=none#Xray-Reality"
   echo "$SHARE_LINK"
   echo ""
   echo "配置信息已保存到: /root/xray-info.txt"

@@ -4,17 +4,33 @@ Xray VLESS 分享链接生成工具
 """
 
 import urllib.parse
+import ipaddress
 import sys
+
+
+def format_host_for_url(host: str) -> str:
+    """RFC 3986: IPv6 字面量在 URL 中必须用方括号包裹。"""
+    host = host.strip()
+    if host.startswith('[') and host.endswith(']'):
+        return host
+    try:
+        if isinstance(ipaddress.ip_address(host), ipaddress.IPv6Address):
+            return f"[{host}]"
+    except ValueError:
+        pass
+    return host
+
 
 def generate_vless_link(uuid, server, port, public_key, short_id, sni="www.microsoft.com", remark="Xray-Reality"):
     """生成 VLESS 分享链接"""
 
     # URL encode public key
     pbk_encoded = urllib.parse.quote(public_key, safe='')
+    host = format_host_for_url(server)
 
     # 生成 VLESS 链接
     vless_link = (
-        f"vless://{uuid}@{server}:{port}"
+        f"vless://{uuid}@{host}:{port}"
         f"?encryption=none"
         f"&flow=xtls-rprx-vision"
         f"&security=reality"

@@ -4,6 +4,7 @@
  */
 
 import { isValidPort, isValidUuid } from './validator';
+import { formatHostForUrl } from './network';
 import { ProtocolError } from './errors';
 import { ProtocolErrors } from '../constants/error-codes';
 
@@ -67,7 +68,7 @@ export function generateVlessRealityLink(params: VlessRealityParams): string {
     headerType: 'none',
   });
 
-  return `vless://${uuid}@${server}:${port}?${searchParams.toString()}#${encodeURIComponent(remark)}`;
+  return `vless://${uuid}@${formatHostForUrl(server)}:${port}?${searchParams.toString()}#${encodeURIComponent(remark)}`;
 }
 
 /**
@@ -91,7 +92,7 @@ export function generateVlessWebSocketLink(params: VlessWebSocketParams): string
     searchParams.set('sni', sni);
   }
 
-  return `vless://${uuid}@${server}:${port}?${searchParams.toString()}#${encodeURIComponent(remark)}`;
+  return `vless://${uuid}@${formatHostForUrl(server)}:${port}?${searchParams.toString()}#${encodeURIComponent(remark)}`;
 }
 
 export interface VlessLinkInfo {

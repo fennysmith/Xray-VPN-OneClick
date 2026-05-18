@@ -49,6 +49,37 @@ describe('generateVlessRealityLink', () => {
   });
 });
 
+describe('generateVlessRealityLink IPv6 handling', () => {
+  it('wraps IPv6 server address in brackets per RFC 3986', () => {
+    const link = generateVlessRealityLink({
+      uuid: '5b6ec5d1-93a1-4056-b90f-9be61021144d',
+      server: '2a02:c207:2329:2574::1',
+      port: 443,
+      publicKey: 'gsQazazvUOLxdcwhenIxf0rIQzanJI48HROjezdWq2Y',
+      shortId: 'f611741eea195fcf',
+    });
+
+    expect(link).toContain('@[2a02:c207:2329:2574::1]:443');
+    // Round-trip: WHATWG URL keeps brackets on IPv6 hostname
+    const parsed = parseVlessLink(link);
+    expect(parsed.server).toBe('[2a02:c207:2329:2574::1]');
+    expect(parsed.port).toBe(443);
+  });
+
+  it('does not bracket IPv4 addresses', () => {
+    const link = generateVlessRealityLink({
+      uuid: '5b6ec5d1-93a1-4056-b90f-9be61021144d',
+      server: '203.0.113.5',
+      port: 443,
+      publicKey: 'pk',
+      shortId: 'sid',
+    });
+
+    expect(link).toContain('@203.0.113.5:443');
+    expect(link).not.toContain('[');
+  });
+});
+
 describe('generateVlessWebSocketLink', () => {
   it('generates valid WebSocket CDN link', () => {
     const link = generateVlessWebSocketLink({
