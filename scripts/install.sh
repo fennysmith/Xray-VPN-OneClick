@@ -321,9 +321,41 @@ if [[ ! -f /etc/systemd/system/xray.service ]] && [[ ! -f /etc/systemd/system/xr
     FORCE_INSTALL="--force"
 fi
 
-# 使用重试机制安装
+# 下载上游官方 install-release.sh 并执行
+# 关键: 必须先验证下载内容是 bash 脚本, 否则 GitHub 偶尔返回的反爬/限流 HTML
+# 会被 `bash -c` 当作脚本执行, 报出 "syntax error near `<!DOCTYPE html>`" 这种
+# 让人摸不着头脑的错误.
 install_xray() {
-    bash -c "$(curl -L https://github.com/XTLS/Xray-install/raw/main/install-release.sh)" @ install $FORCE_INSTALL
+    local tmp script_url first_bytes
+    tmp=$(mktemp --suffix=.sh) || return 1
+
+    # 主源 + raw 镜像 (raw.githubusercontent.com 偶尔比 github.com/.../raw/ 稳)
+    for script_url in \
+        "https://github.com/XTLS/Xray-install/raw/main/install-release.sh" \
+        "https://raw.githubusercontent.com/XTLS/Xray-install/main/install-release.sh"; do
+
+        if ! curl -fsSL --connect-timeout 10 --max-time 60 "$script_url" -o "$tmp"; then
+            echo "  ↳ 从 $script_url 下载失败"
+            continue
+        fi
+
+        first_bytes=$(head -c 2 "$tmp")
+        if [[ "$first_bytes" != "#!" ]]; then
+            echo "  ↳ $script_url 返回的不是 bash 脚本 (前 80 字节):"
+            head -c 80 "$tmp" | sed 's/^/      /'
+            echo ""
+            echo "      多半是上游临时返回了 HTML/限流页, 换镜像重试..."
+            continue
+        fi
+
+        bash "$tmp" install $FORCE_INSTALL
+        local rc=$?
+        rm -f "$tmp"
+        return $rc
+    done
+
+    rm -f "$tmp"
+    return 1
 }
 
 MAX_RETRIES=3
