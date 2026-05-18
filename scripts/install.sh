@@ -545,7 +545,64 @@ if [ "$ENABLE_TCP_OPTIMIZATIONS" = true ]; then
     }' /usr/local/etc/xray/config.json > /tmp/xray-config-tmp.json && \
     mv /tmp/xray-config-tmp.json /usr/local/etc/xray/config.json
 
-    echo "✓ TCP 性能优化已启用 (TCP Fast Open, TCP NoDelay, TCP KeepAlive)"
+    echo "✓ Xray sockopt 已启用 (TCP Fast Open, TCP NoDelay, TCP KeepAlive)"
+fi
+
+# ============================================
+# 内核 TCP 调优 (BBR + fq qdisc + 大缓冲)
+# 这一步对跨洲单 TCP 连接吞吐影响最大
+# ============================================
+echo ""
+echo "[4.1/5] 启用内核 BBR + TCP 缓冲调优..."
+
+# 加载 BBR 模块（部分极简内核默认不加载）
+if ! lsmod | grep -q "^tcp_bbr "; then
+    if modprobe tcp_bbr 2>/dev/null; then
+        echo "tcp_bbr" > /etc/modules-load.d/bbr.conf
+        echo "✓ tcp_bbr 模块已加载并设为开机自动加载"
+    else
+        echo "⚠️  当前内核无 tcp_bbr 模块，跳过 BBR（可能是极简/容器内核）"
+    fi
+fi
+
+# 写入持久化 sysctl 配置
+cat > /etc/sysctl.d/99-xray-bbr.conf <<'SYSCTL_EOF'
+# Xray VPN performance tuning (managed by Xray-VPN-OneClick install.sh)
+# Reversible: rm this file and reboot to revert.
+
+# 拥塞控制: BBR + fq qdisc (BBR 推荐搭配 fq)
+net.core.default_qdisc = fq
+net.ipv4.tcp_congestion_control = bbr
+
+# 套接字缓冲上限 (~64MB) - 支持高 BDP 跨洲链路
+net.core.rmem_max = 67108864
+net.core.wmem_max = 67108864
+net.ipv4.tcp_rmem = 4096 87380 33554432
+net.ipv4.tcp_wmem = 4096 65536 33554432
+
+# 连接队列 / backlog
+net.core.netdev_max_backlog = 32768
+net.core.somaxconn = 65535
+
+# TCP 行为
+net.ipv4.tcp_fastopen = 3
+net.ipv4.tcp_mtu_probing = 1
+net.ipv4.tcp_slow_start_after_idle = 0
+net.ipv4.tcp_notsent_lowat = 16384
+net.ipv4.tcp_tw_reuse = 1
+net.ipv4.tcp_fin_timeout = 15
+SYSCTL_EOF
+
+# 应用（容器/受限环境里部分参数可能写不进去，单条容错处理）
+sysctl -p /etc/sysctl.d/99-xray-bbr.conf >/dev/null 2>&1 || true
+
+# 验证关键参数是否真的生效
+ACTUAL_CC=$(sysctl -n net.ipv4.tcp_congestion_control 2>/dev/null || echo "unknown")
+ACTUAL_QDISC=$(sysctl -n net.core.default_qdisc 2>/dev/null || echo "unknown")
+if [ "$ACTUAL_CC" = "bbr" ]; then
+    echo "✓ 内核 BBR + fq qdisc 已启用 (cc=$ACTUAL_CC, qdisc=$ACTUAL_QDISC)"
+else
+    echo "⚠️  BBR 未生效 (当前 cc=$ACTUAL_CC)，可能受容器内核限制；配置文件已写入 /etc/sysctl.d/99-xray-bbr.conf"
 fi
 
 # 确保日志目录和文件存在，并设置正确的权限
