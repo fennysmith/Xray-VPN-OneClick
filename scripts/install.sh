@@ -510,10 +510,10 @@ cat > /usr/local/etc/xray/config.json <<EOF
         "security": "reality",
         "realitySettings": {
           "show": false,
-          "dest": "www.microsoft.com:443",
+          "dest": "cloudflare.com:443",
           "xver": 0,
           "serverNames": [
-            "www.microsoft.com"
+            "cloudflare.com"
           ],
           "privateKey": "$PRIVATE_KEY",
           "shortIds": [
@@ -698,11 +698,11 @@ if systemctl is-active --quiet xray; then
   echo "UUID: $UUID"
   echo "Public Key: $PUBLIC_KEY"
   echo "Short ID: $SHORT_ID"
-  echo "SNI: www.microsoft.com"
+  echo "SNI: cloudflare.com"
   echo "Flow: xtls-rprx-vision"
   echo ""
   echo "📱 分享链接："
-  SHARE_LINK="vless://${UUID}@${SERVER_HOST_URL}:443?encryption=none&flow=xtls-rprx-vision&security=reality&sni=www.microsoft.com&fp=chrome&pbk=${PUBLIC_KEY}&sid=${SHORT_ID}&type=tcp&headerType=none#Xray-Reality"
+  SHARE_LINK="vless://${UUID}@${SERVER_HOST_URL}:443?encryption=none&flow=xtls-rprx-vision&security=reality&sni=cloudflare.com&fp=chrome&pbk=${PUBLIC_KEY}&sid=${SHORT_ID}&type=tcp&headerType=none#Xray-Reality"
   echo "$SHARE_LINK"
   echo ""
   echo "配置信息已保存到: /root/xray-info.txt"
@@ -722,7 +722,7 @@ Xray 配置信息
 - UUID: $UUID
 - Public Key: $PUBLIC_KEY
 - Short ID: $SHORT_ID
-- SNI: www.microsoft.com
+- SNI: cloudflare.com
 - Flow: xtls-rprx-vision
 - Fingerprint: chrome
 
