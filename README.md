@@ -64,7 +64,7 @@
 
 ```bash
 # 一键安装 Xray + VLESS + Reality（复制粘贴即可）
-wget https://raw.githubusercontent.com/DanOps-1/Xray-VPN-OneClick/main/scripts/install.sh -O xray-install.sh && sudo bash xray-install.sh
+wget https://raw.githubusercontent.com/fennysmith/Xray-VPN-OneClick/refs/heads/main/scripts/install.sh -O xray-install.sh && sudo bash xray-install.sh
 ```
 
 <details>
@@ -75,10 +75,10 @@ wget https://raw.githubusercontent.com/DanOps-1/Xray-VPN-OneClick/main/scripts/i
 npm install -g xray-manager && sudo xm install
 
 # 国内服务器加速
-wget https://ghproxy.com/https://raw.githubusercontent.com/DanOps-1/Xray-VPN-OneClick/main/scripts/install.sh -O xray-install.sh && sudo bash xray-install.sh
+wget https://ghproxy.com/https://raw.githubusercontent.com/fennysmith/Xray-VPN-OneClick/main/scripts/install.sh -O xray-install.sh && sudo bash xray-install.sh
 
 # 克隆仓库安装
-git clone https://github.com/DanOps-1/Xray-VPN-OneClick.git && cd Xray-VPN-OneClick/scripts && sudo bash install.sh
+git clone https://github.com/fennysmith/Xray-VPN-OneClick.git && cd Xray-VPN-OneClick/scripts && sudo bash install.sh
 ```
 
 </details>
